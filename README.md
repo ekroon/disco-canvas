@@ -926,3 +926,1309 @@ draw();
 This code periodically updates the `hue`, `saturation`, and `lightness` values using sine functions based on the `time` parameter. The `hue` value is updated every 5 seconds, the `saturation` value is updated every 2 seconds, and the `lightness` value is updated every second. The `saturationIncrement` and `lightnessIncrement` variables control the range of the periodic changes.
 
 With this code, the colors will periodically change over time based on the `hue`, `saturation`, and `lightness` values. You can adjust the `saturationIncrement` and `lightnessIncrement` variables to change the range of the periodic changes.
+
+ekroon: for selected text: on mobile the page refreshes instead of slowing or speeding up the interval
+
+GitHub Copilot: It sounds like you're experiencing an issue where the page refreshes instead of slowing or speeding up the interval when you try to adjust it on mobile. This may be because the default behavior of touch events on mobile devices is to scroll the page, which can interfere with your code's touch event listeners.
+
+To prevent the page from scrolling when you try to adjust the interval, you can use the `preventDefault()` method on the touch event. Here's an example of how you can modify your code to do this:
+
+```javascript
+let startY;
+document.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault(); // prevent the default touch event behavior
+});
+
+document.addEventListener('touchmove', (event) => {
+  adjustInterval(event.touches[0]);
+  event.preventDefault(); // prevent the default touch event behavior
+});
+```
+
+With this code, the `preventDefault()` method is called on the touch event in both event listeners, which prevents the default touch event behavior (i.e. scrolling the page). This should allow you to adjust the interval on mobile without the page refreshing.
+
+ekroon: This doesn't work in Safari on iphone
+
+GitHub Copilot: I'm sorry to hear that the previous solution didn't work for you in Safari on iPhone. 
+
+One possible reason for this issue is that Safari on iPhone doesn't support the `touchmove` event on the `document` object. Instead, you may need to attach the `touchmove` event listener to the `canvas` element itself. Here's an updated example that should work in Safari on iPhone:
+
+```javascript
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault(); // prevent the default touch event behavior
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event.touches[0]);
+  event.preventDefault(); // prevent the default touch event behavior
+});
+```
+
+With this code, the `touchstart` and `touchmove` event listeners are attached to the `canvas` element instead of the `document` object. This should allow you to adjust the interval on Safari on iPhone without the page refreshing.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: The changes still don't work. How do I add a debug overlay with the current interval?
+
+GitHub Copilot: To add a debug overlay with the current interval, you can create a new HTML element and append it to the document body. Here's an example of how you can modify your code to do this:
+
+```javascript
+let interval = 100;
+function adjustInterval(event) {
+  event.preventDefault();
+
+  if (event.deltaY < 0 || event.touches && event.touches[0].clientY < startY) {
+    interval -= 10;
+  } else {
+    interval += 10;
+  }
+
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  // Update the debug overlay with the current interval
+  debugOverlay.textContent = `Interval: ${interval}ms`;
+}
+
+// Create a new debug overlay element and append it to the document body
+const debugOverlay = document.createElement('div');
+debugOverlay.style.position = 'fixed';
+debugOverlay.style.top = '0';
+debugOverlay.style.right = '0';
+debugOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+debugOverlay.style.color = 'white';
+debugOverlay.style.padding = '10px';
+debugOverlay.style.zIndex = '9999';
+document.body.appendChild(debugOverlay);
+
+document.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event.touches[0]);
+  event.preventDefault();
+});
+
+function draw(time) {
+  updateColors(time)
+
+  for (let x = 0; x < width; x += size) {
+    for (let y = 0; y < height; y += size) {
+      const color = colors[Math.floor(Math.random() * numColors)];
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  // Update the debug overlay with the current interval
+  debugOverlay.textContent = `Interval: ${interval}ms`;
+
+  setTimeout(() => {
+    requestAnimationFrame((time) => {
+      draw(time);
+    });
+  }, interval);
+}
+
+draw();
+```
+
+With this code, a new `div` element is created and appended to the document body to serve as the debug overlay. The `adjustInterval` function is updated to also update the debug overlay with the current interval. Finally, the `draw` function is updated to also update the debug overlay with the current interval before calling `setTimeout` with the current interval.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: Can I create this overlay in the HTML and only update the value in the javascript file?
+
+GitHub Copilot: Yes, you can create the debug overlay in the HTML and update its value in the JavaScript file. Here's an example of how you can modify your code to do this:
+
+HTML:
+```html
+<body>
+  <canvas></canvas>
+  <div id="debug-overlay">Interval: 100ms</div>
+</body>
+```
+
+JavaScript:
+```javascript
+let interval = 100;
+function adjustInterval(event) {
+  event.preventDefault();
+
+  if (event.deltaY < 0 || event.touches && event.touches[0].clientY < startY) {
+    interval -= 10;
+  } else {
+    interval += 10;
+  }
+
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  // Update the debug overlay with the current interval
+  debugOverlay.textContent = `Interval: ${interval}ms`;
+}
+
+const debugOverlay = document.getElementById('debug-overlay');
+
+document.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event.touches[0]);
+  event.preventDefault();
+});
+
+window.addEventListener('resize', () => {
+  requestAnimationFrame(() => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    size = Math.min(width, height) / 10;
+  });
+});
+
+function draw(time) {
+  updateColors(time)
+
+  for (let x = 0; x < width; x += size) {
+    for (let y = 0; y < height; y += size) {
+      const color = colors[Math.floor(Math.random() * numColors)];
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  // Update the debug overlay with the current interval
+  debugOverlay.textContent = `Interval: ${interval}ms`;
+
+  setTimeout(() => {
+    requestAnimationFrame((time) => {
+      draw(time);
+    });
+  }, interval);
+}
+
+draw();
+```
+
+With this code, the debug overlay is created in the HTML and given an `id` attribute of `debug-overlay`. In the JavaScript file, the `debugOverlay` variable is set to the element with that `id`, and its `textContent` property is updated with the current interval in both the `adjustInterval` and `draw` functions.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: Should canvas also get an ID?
+
+GitHub Copilot: Adding an ID to the canvas element can be useful if you need to reference it in your JavaScript code. Here's an example of how you can modify your code to add an ID to the canvas element:
+
+HTML:
+```html
+<body>
+  <canvas id="my-canvas"></canvas>
+  <div id="debug-overlay">Interval: 100ms</div>
+</body>
+```
+
+JavaScript:
+```javascript
+const canvas = document.getElementById('my-canvas');
+const ctx = canvas.getContext('2d');
+
+let saturation = 40;
+let lightness = 60;
+const numColors = 6;
+let width = canvas.width = window.innerWidth;
+let height = canvas.height = window.innerHeight;
+let size = Math.min(width, height) / 10;
+
+const colors = [];
+let hue = 0;
+const hueIncrement = 20;
+
+function updateColors(time) {
+  hue = Math.sin(time / 3000) * 180 + 180;
+  hue = hue % 360;
+
+  saturation = Math.sin(time / 2000) * 20 + 40;
+  saturation = Math.max(saturation, 40);
+  saturation = Math.min(saturation, 100);
+
+  lightness = Math.sin(time / 1000) * 20 + 60;
+  lightness = Math.max(lightness, 40);
+  lightness = Math.min(lightness, 80);
+
+  for (let i = 0; i < numColors; i++) {
+    const color = `hsl(${hue + i * hueIncrement}, ${saturation}%, ${lightness}%)`;
+    colors[i] = color;
+  }
+}
+
+let interval = 100;
+function adjustInterval(event) {
+  event.preventDefault();
+
+  if (event.deltaY < 0 || event.touches && event.touches[0].clientY < startY) {
+    interval -= 10;
+  } else {
+    interval += 10;
+  }
+
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+}
+
+document.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event.touches[0]);
+  event.preventDefault();
+});
+
+window.addEventListener('resize', () => {
+  requestAnimationFrame(() => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    size = Math.min(width, height) / 10;
+  });
+});
+
+function draw(time) {
+  updateColors(time)
+
+  for (let x = 0; x < width; x += size) {
+    for (let y = 0; y < height; y += size) {
+      const color = colors[Math.floor(Math.random() * numColors)];
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  setTimeout(() => {
+    requestAnimationFrame((time) => {
+      draw(time);
+    });
+  }, interval);
+}
+
+draw();
+```
+
+With this code, the canvas element is given an `id` attribute of `my-canvas`, and the `canvas` variable is set to the element with that `id`. This allows you to reference the canvas element in your JavaScript code using the `canvas` variable.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: In the selected text, event.preventDefault() at the beginning seems to cause problems on mobile.
+
+GitHub Copilot: Yes, calling `event.preventDefault()` at the beginning of the `adjustInterval` function can prevent the default behavior of touch events on mobile devices, which can cause problems with scrolling and other touch interactions.
+
+To fix this issue, you can move the `event.preventDefault()` call to the end of the function, after the interval has been adjusted. Here's an example of how you can modify your code to do this:
+
+```javascript
+renderDebugOverlay();
+function adjustInterval(event) {
+  let deltaY = event.deltaY;
+  if (event.touches) {
+    deltaY = event.touches[0].clientY - startY;
+  }
+
+  interval -= deltaY;
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  renderDebugOverlay();
+
+  // Call preventDefault at the end of the function
+  event.preventDefault();
+}
+
+canvas.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event);
+  event.preventDefault();
+});
+```
+
+With this code, the `event.preventDefault()` call is moved to the end of the `adjustInterval` function, after the interval has been adjusted. This should prevent any issues with touch events on mobile devices.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: In the selected text, the if statement is always false on mobile
+
+GitHub Copilot: The issue with the `if` statement in the selected text is that it checks for `event.touches` before accessing `event.touches[0].clientY`. On desktop devices, `event.touches` is `undefined`, so the `if` statement evaluates to `false` and the code inside the `else` block is executed. However, on mobile devices, `event.touches` is an array, so trying to access `event.touches[0].clientY` will not work and will cause the `if` statement to evaluate to `false` even when the user is scrolling.
+
+To fix this issue, you can modify the `if` statement to check for the existence of `event.touches` before accessing `event.touches[0].clientY`. Here's an example of how you can modify your code to do this:
+
+```javascript
+renderDebugOverlay();
+function adjustInterval(event) {
+  let deltaY = event.deltaY;
+  if (event.touches && event.touches.length > 0) {
+    deltaY = event.touches[0].clientY - startY;
+  }
+
+  interval -= deltaY;
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  renderDebugOverlay();
+
+  event.preventDefault();
+}
+
+canvas.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event);
+  event.preventDefault();
+});
+```
+
+With this code, the `if` statement checks for the existence of `event.touches` and that `event.touches` has at least one element before accessing `event.touches[0].clientY`. This should prevent any issues with touch events on mobile devices.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: The debug overlay now shows Interval: NaNms after scrolling on mobile
+
+GitHub Copilot: The issue with the debug overlay showing `NaNms` after scrolling on mobile is likely due to the `deltaY` value being `undefined` when the `wheel` event is triggered by a touch event on mobile devices. This can cause the `interval` value to become `NaN` when `deltaY` is subtracted from it.
+
+To fix this issue, you can modify the `adjustInterval` function to check for `undefined` values of `deltaY` and set them to `0` instead. Here's an example of how you can modify your code to do this:
+
+```javascript
+renderDebugOverlay();
+function adjustInterval(event) {
+  let deltaY = event.deltaY;
+  if (event.touches && event.touches.length > 0) {
+    deltaY = event.touches[0].clientY - startY;
+  }
+
+  // Check for undefined values of deltaY and set them to 0
+  if (typeof deltaY === 'undefined') {
+    deltaY = 0;
+  }
+
+  interval -= deltaY;
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  renderDebugOverlay();
+
+  event.preventDefault();
+}
+
+canvas.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event);
+  event.preventDefault();
+});
+```
+
+With this code, the `adjustInterval` function checks for `undefined` values of `deltaY` and sets them to `0` if they are found. This should prevent any issues with the `interval` value becoming `NaN` when scrolling on mobile devices.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: explain the selected line
+
+GitHub Copilot: This line of code calculates the change in the Y coordinate of the touch event by subtracting the initial Y coordinate of the touch event from the current Y coordinate of the touch event. 
+
+`event.touches` is an array of touch points that represent all current points of contact with the touch surface. `event.touches[0]` represents the first touch point in the array, which is the touch point that triggered the `touchmove` event. `clientY` is a property of the touch point that represents the Y coordinate of the touch point relative to the viewport.
+
+`startY` is a variable that stores the initial Y coordinate of the touch event. This variable is set in the `touchstart` event listener.
+
+By subtracting `startY` from `event.touches[0].clientY`, the line of code calculates the change in the Y coordinate of the touch event since the `touchstart` event was triggered. This value is then stored in the `deltaY` variable for use in adjusting the interval between color updates.
+
+ekroon: let startY; is below the adjustInterval function. Would that be a problem?
+
+GitHub Copilot: No, it should not be a problem. In JavaScript, variable declarations are hoisted to the top of their scope, which means that the `let startY;` declaration will be moved to the top of the current scope (which is the global scope in this case) by the JavaScript engine before the code is executed. This means that the `startY` variable will be available to both the `adjustInterval` function and the event listeners that are defined below it.
+
+So, even though the `let startY;` declaration appears after the `adjustInterval` function in the code, it will still be available to the `adjustInterval` function and the event listeners that use it.
+
+Please let me know if you have any further questions.
+
+ekroon: I tried alerting event.touches and that is undefined on mobile 
+
+GitHub Copilot: If `event.touches` is `undefined` on mobile, it means that the `wheel` event is not being triggered by a touch event. Instead, it is likely being triggered by a mouse or trackpad scroll event.
+
+To handle both touch and scroll events, you can modify the `adjustInterval` function to check for the existence of `event.deltaY` in addition to `event.touches`. If `event.deltaY` is defined, it means that the event was triggered by a scroll event, and you can use `event.deltaY` to adjust the interval. If `event.deltaY` is not defined, it means that the event was triggered by a touch event, and you can use the touch position to calculate the change in interval.
+
+Here's an example of how you can modify your code to handle both touch and scroll events:
+
+```javascript
+renderDebugOverlay();
+function adjustInterval(event) {
+  let deltaY = event.deltaY;
+  if (event.touches && event.touches.length > 0) {
+    deltaY = event.touches[0].clientY - startY;
+  } else if (typeof event.deltaY !== 'undefined') {
+    deltaY = event.deltaY;
+  }
+
+  interval -= deltaY;
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  renderDebugOverlay();
+
+  event.preventDefault();
+}
+
+canvas.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event.touches[0]);
+  event.preventDefault();
+});
+```
+
+With this code, the `adjustInterval` function checks for the existence of `event.deltaY` in addition to `event.touches`. If `event.deltaY` is defined, it uses it to adjust the interval. If `event.deltaY` is not defined, it falls back to using the touch position to calculate the change in interval.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: I am definitely testing on a mobile device
+
+GitHub Copilot: If you are testing on a mobile device and `event.touches` is `undefined`, it means that the `wheel` event is not being triggered by a touch event. Instead, it is likely being triggered by a scroll event.
+
+To handle both touch and scroll events, you can modify the `adjustInterval` function to check for the existence of `event.deltaY` in addition to `event.touches`. If `event.deltaY` is defined, it means that the event was triggered by a scroll event, and you can use `event.deltaY` to adjust the interval. If `event.deltaY` is not defined, it means that the event was triggered by a touch event, and you can use the touch position to calculate the change in interval.
+
+Here's an example of how you can modify your code to handle both touch and scroll events:
+
+```javascript
+renderDebugOverlay();
+function adjustInterval(event) {
+  let deltaY = event.deltaY;
+  if (event.touches && event.touches.length > 0) {
+    deltaY = event.touches[0].clientY - startY;
+  } else if (typeof event.deltaY !== 'undefined') {
+    deltaY = event.deltaY;
+  }
+
+  interval -= deltaY;
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  renderDebugOverlay();
+
+  event.preventDefault();
+}
+
+canvas.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event.touches[0]);
+  event.preventDefault();
+});
+```
+
+With this code, the `adjustInterval` function checks for the existence of `event.deltaY` in addition to `event.touches`. If `event.deltaY` is defined, it uses it to adjust the interval. If `event.deltaY` is not defined, it falls back to using the touch position to calculate the change in interval.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: In the selected text, it seems that using using event.touches[0] as input to adjustInterval causes problems, as that method does the same thing to the event. 
+
+GitHub Copilot: Yes, you are correct. The `adjustInterval` function modifies the `deltaY` value of the `event` object that is passed to it. If you pass `event.touches[0]` to `adjustInterval`, it will modify the `deltaY` value of the `event.touches[0]` object instead of the original `event` object. This can cause issues if you need to access the original `event` object later.
+
+To fix this issue, you can modify the `touchmove` event listener to pass the original `event` object to `adjustInterval` instead of `event.touches[0]`. Here's an example of how you can modify your code to do this:
+
+```javascript
+renderDebugOverlay();
+function adjustInterval(event) {
+  let deltaY = event.deltaY;
+  if (event.touches && event.touches.length > 0) {
+    deltaY = event.touches[0].clientY - startY;
+  } else if (typeof event.deltaY !== 'undefined') {
+    deltaY = event.deltaY;
+  }
+
+  interval -= deltaY;
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  renderDebugOverlay();
+
+  event.preventDefault();
+}
+
+canvas.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event);
+  event.preventDefault();
+});
+```
+
+With this code, the `touchmove` event listener passes the original `event` object to `adjustInterval` instead of `event.touches[0]`. This ensures that the `deltaY` value of the original `event` object is modified, and not the `deltaY` value of `event.touches[0]`.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: deltaY on mobile should change a bit slower
+
+GitHub Copilot: To make the `deltaY` value change a bit slower on mobile, you can divide the `deltaY` value by a factor. This will reduce the rate at which the interval changes when the user scrolls or touches the screen.
+
+Here's an example of how you can modify the `adjustInterval` function to divide the `deltaY` value by a factor of 2 on mobile:
+
+```javascript
+renderDebugOverlay();
+function adjustInterval(event) {
+  let deltaY = event.deltaY;
+  if (event.touches && event.touches.length > 0) {
+    deltaY = (event.touches[0].clientY - startY) / 2;
+  } else if (typeof event.deltaY !== 'undefined') {
+    deltaY = event.deltaY;
+  }
+
+  interval -= deltaY;
+  interval = Math.max(interval, 10);
+  interval = Math.min(interval, 1000);
+
+  renderDebugOverlay();
+
+  event.preventDefault();
+}
+
+canvas.addEventListener('wheel', adjustInterval);
+
+let startY;
+canvas.addEventListener('touchstart', (event) => {
+  startY = event.touches[0].clientY;
+  event.preventDefault();
+});
+
+canvas.addEventListener('touchmove', (event) => {
+  adjustInterval(event);
+  event.preventDefault();
+});
+```
+
+With this code, the `adjustInterval` function divides the `deltaY` value by a factor of 2 when it is triggered by a touch event. This will slow down the rate at which the interval changes when the user touches the screen.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: the selected line should be truncated to numbers without decimals
+
+GitHub Copilot: To truncate the `deltaY` value to a whole number, you can use the `Math.floor()` method. This method rounds a number down to the nearest integer.
+
+Here's an example of how you can modify the selected line to truncate the `deltaY` value to a whole number:
+
+```javascript
+deltaY = Math.floor(deltaY / 50);
+```
+
+With this code, the `deltaY` value is divided by 50 and then rounded down to the nearest integer using the `Math.floor()` method.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: Double click or double tap on mobile should fullscreen the page
+
+GitHub Copilot: To make the page fullscreen when the user double clicks or double taps on mobile, you can use the `requestFullscreen()` method. This method requests that the element on which it is called be displayed in full-screen mode.
+
+Here's an example of how you can modify your code to make the page fullscreen when the user double clicks or double taps on mobile:
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, size;
+    const numColors = 5;
+    const colors = [
+        '#f44336',
+        '#2196f3',
+        '#4caf50',
+        '#ffc107',
+        '#9c27b0'
+    ];
+    let interval = 100;
+    let lastTime = 0;
+
+    function updateColors(time) {
+        if (time - lastTime > 1000) {
+            colors.unshift(colors.pop());
+            lastTime = time;
+        }
+    }
+
+    function renderDebugOverlay() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.font = '24px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Interval: ${interval.toFixed(0)}ms`, width / 2, height / 2);
+    }
+
+    function adjustInterval(event) {
+        let deltaY = event.deltaY;
+        if (event.touches && event.touches.length > 0) {
+            deltaY = (event.touches[0].clientY - startY) / 2;
+        } else if (typeof event.deltaY !== 'undefined') {
+            deltaY = event.deltaY;
+        }
+
+        deltaY = Math.floor(deltaY / 50);
+
+        interval -= deltaY;
+        interval = Math.max(interval, 10);
+        interval = Math.min(interval, 1000);
+
+        renderDebugOverlay();
+
+        event.preventDefault();
+    }
+
+    document.addEventListener('wheel', adjustInterval);
+
+    let startY;
+    canvas.addEventListener('touchstart', (event) => {
+        startY = event.touches[0].clientY;
+        event.preventDefault();
+    });
+
+    canvas.addEventListener('touchmove', (event) => {
+        adjustInterval(event);
+        event.preventDefault();
+    });
+
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(() => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            size = Math.min(width, height) / 10;
+        });
+    });
+
+    function draw(time) {
+        updateColors(time)
+
+        for (let x = 0; x < width; x += size) {
+            for (let y = 0; y < height; y += size) {
+                const color = colors[Math.floor(Math.random() * numColors)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        setTimeout(() => {
+            requestAnimationFrame(draw);
+        }, interval);
+    }
+
+    draw();
+
+    let clicks = 0;
+    const threshold = 300;
+    let lastClickTime = 0;
+
+    document.addEventListener('click', () => {
+        const now = Date.now();
+        if (now - lastClickTime < threshold) {
+            clicks++;
+            if (clicks === 2) {
+                document.documentElement.requestFullscreen();
+                clicks = 0;
+            }
+        } else {
+            clicks = 1;
+        }
+        lastClickTime = now;
+    });
+
+    document.addEventListener('touchstart', (event) => {
+        const now = Date.now();
+        if (now - lastClickTime < threshold) {
+            clicks++;
+            if (clicks === 2) {
+                document.documentElement.requestFullscreen();
+                clicks = 0;
+            }
+        } else {
+            clicks = 1;
+        }
+        lastClickTime = now;
+    });
+});
+```
+
+With this code, the `click` and `touchstart` event listeners detect double clicks and double taps, respectively. When a double click or double tap is detected, the `requestFullscreen()` method is called on the `documentElement`, which makes the page fullscreen.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: Could I use a library for this double click to fullscreen?
+
+GitHub Copilot: Yes, you can use a library to handle double click or double tap events and make the page fullscreen. One popular library for handling touch events is Hammer.js.
+
+Here's an example of how you can modify your code to use Hammer.js to handle double tap events and make the page fullscreen:
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, size;
+    const numColors = 5;
+    const colors = [
+        '#f44336',
+        '#2196f3',
+        '#4caf50',
+        '#ffc107',
+        '#9c27b0'
+    ];
+    let interval = 100;
+    let lastTime = 0;
+
+    function updateColors(time) {
+        if (time - lastTime > 1000) {
+            colors.unshift(colors.pop());
+            lastTime = time;
+        }
+    }
+
+    function renderDebugOverlay() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.font = '24px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Interval: ${interval.toFixed(0)}ms`, width / 2, height / 2);
+    }
+
+    function adjustInterval(event) {
+        let deltaY = event.deltaY;
+        if (event.touches && event.touches.length > 0) {
+            deltaY = (event.touches[0].clientY - startY) / 2;
+        } else if (typeof event.deltaY !== 'undefined') {
+            deltaY = event.deltaY;
+        }
+
+        deltaY = Math.floor(deltaY / 50);
+
+        interval -= deltaY;
+        interval = Math.max(interval, 10);
+        interval = Math.min(interval, 1000);
+
+        renderDebugOverlay();
+
+        event.preventDefault();
+    }
+
+    document.addEventListener('wheel', adjustInterval);
+
+    let startY;
+    canvas.addEventListener('touchstart', (event) => {
+        startY = event.touches[0].clientY;
+        event.preventDefault();
+    });
+
+    canvas.addEventListener('touchmove', (event) => {
+        adjustInterval(event);
+        event.preventDefault();
+    });
+
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(() => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            size = Math.min(width, height) / 10;
+        });
+    });
+
+    function draw(time) {
+        updateColors(time)
+
+        for (let x = 0; x < width; x += size) {
+            for (let y = 0; y < height; y += size) {
+                const color = colors[Math.floor(Math.random() * numColors)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        setTimeout(() => {
+            requestAnimationFrame(draw);
+        }, interval);
+    }
+
+    draw();
+
+    const mc = new Hammer(canvas);
+    mc.get('doubletap').set({ time: 300 });
+    mc.on('doubletap', () => {
+        document.documentElement.requestFullscreen();
+    });
+});
+```
+
+With this code, the `Hammer()` function is used to create a new Hammer instance on the `canvas` element. The `get()` method is used to get the `doubletap` recognizer, and the `set()` method is used to set the `time` option to 300 milliseconds. This means that a double tap must occur within 300 milliseconds to trigger the `doubletap` event.
+
+The `on()` method is used to add an event listener for the `doubletap` event. When the `doubletap` event is triggered, the `requestFullscreen()` method is called on the `documentElement`, which makes the page fullscreen.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: could I use HammerJS for the scrolling to?
+
+GitHub Copilot: Yes, you can use HammerJS to handle scrolling events as well. Here's an example of how you can modify your code to use HammerJS to handle scrolling events:
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, size;
+    const numColors = 5;
+    const colors = [
+        '#f44336',
+        '#2196f3',
+        '#4caf50',
+        '#ffc107',
+        '#9c27b0'
+    ];
+    let interval = 100;
+    let lastTime = 0;
+
+    function updateColors(time) {
+        if (time - lastTime > 1000) {
+            colors.unshift(colors.pop());
+            lastTime = time;
+        }
+    }
+
+    function renderDebugOverlay() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.font = '24px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Interval: ${interval.toFixed(0)}ms`, width / 2, height / 2);
+    }
+
+    function adjustInterval(deltaY) {
+        deltaY = Math.floor(deltaY / 50);
+
+        interval -= deltaY;
+        interval = Math.max(interval, 10);
+        interval = Math.min(interval, 1000);
+
+        renderDebugOverlay();
+    }
+
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(() => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            size = Math.min(width, height) / 10;
+        });
+    });
+
+    function draw(time) {
+        updateColors(time)
+
+        for (let x = 0; x < width; x += size) {
+            for (let y = 0; y < height; y += size) {
+                const color = colors[Math.floor(Math.random() * numColors)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        setTimeout(() => {
+            requestAnimationFrame(draw);
+        }, interval);
+    }
+
+    draw();
+
+    const mc = new Hammer(canvas);
+    mc.get('pan').set({ direction: Hammer.DIRECTION_VERTICAL });
+    mc.on('pan', (event) => {
+        adjustInterval(event.deltaY);
+    });
+});
+```
+
+With this code, the `Hammer()` function is used to create a new Hammer instance on the `canvas` element. The `get()` method is used to get the `pan` recognizer, and the `set()` method is used to set the `direction` option to `Hammer.DIRECTION_VERTICAL`. This means that the `pan` event will only be triggered when the user scrolls vertically.
+
+The `on()` method is used to add an event listener for the `pan` event. When the `pan` event is triggered, the `adjustInterval()` function is called with the `deltaY` value of the event. The `adjustInterval()` function adjusts the `interval` value based on the `deltaY` value and updates the debug overlay.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: What do I add to my HTML file to use HammerJS?
+
+GitHub Copilot: To use HammerJS in your HTML file, you need to include the HammerJS library in your project and add a script tag to load it. You can download the HammerJS library from the official website or use a CDN.
+
+Here's an example of how you can include HammerJS in your HTML file using a CDN:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>My App</title>
+</head>
+<body>
+    <canvas></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+```
+
+In this example, the HammerJS library is loaded from the CDN using a script tag. The `src` attribute of the script tag points to the URL of the HammerJS library. The `script.js` file is also included using a script tag.
+
+Once you have included the HammerJS library in your HTML file, you can use it in your JavaScript code to handle touch events.
+
+Please let me know if you have any further questions.
+
+ekroon: Now my scrolling in a computer browser doesn't work anymore
+
+GitHub Copilot: It's possible that the HammerJS library is interfering with the default scrolling behavior of the browser. To fix this, you can disable HammerJS when the user is using a desktop browser.
+
+Here's an example of how you can modify your code to disable HammerJS on desktop browsers:
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, size;
+    const numColors = 5;
+    const colors = [
+        '#f44336',
+        '#2196f3',
+        '#4caf50',
+        '#ffc107',
+        '#9c27b0'
+    ];
+    let interval = 100;
+    let lastTime = 0;
+
+    function updateColors(time) {
+        if (time - lastTime > 1000) {
+            colors.unshift(colors.pop());
+            lastTime = time;
+        }
+    }
+
+    function renderDebugOverlay() {
+        if (debugOverlayEnabled) {
+            debugOverlay.textContent = `Interval: ${interval}ms`;
+        }
+    }
+
+    let interval = 100;
+    renderDebugOverlay();
+    function adjustInterval(deltaY) {
+        deltaY = Math.floor(deltaY / 50);
+
+        interval -= deltaY;
+        interval = Math.max(interval, 10);
+        interval = Math.min(interval, 1000);
+
+        renderDebugOverlay();
+    }
+
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(() => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            size = Math.min(width, height) / 10;
+        });
+    });
+
+    function draw(time) {
+        updateColors(time)
+
+        for (let x = 0; x < width; x += size) {
+            for (let y = 0; y < height; y += size) {
+                const color = colors[Math.floor(Math.random() * numColors)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        setTimeout(() => {
+            requestAnimationFrame(draw);
+        }, interval);
+    }
+
+    draw();
+
+    if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        const mc = new Hammer(canvas);
+        mc.get('pan').set({ direction: Hammer.DIRECTION_VERTICAL });
+        mc.on('pan', (event) => {
+            adjustInterval(event.deltaY);
+        });
+    } else {
+        canvas.addEventListener('wheel', (event) => {
+            adjustInterval(event.deltaY);
+            event.preventDefault();
+        });
+    }
+});
+```
+
+With this code, the `if` statement checks if the user is using a desktop browser by checking the `navigator.userAgent` string. If the user is using a desktop browser, the `wheel` event is used to handle scrolling instead of HammerJS.
+
+If the user is not using a desktop browser, the HammerJS code is used to handle scrolling as before.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: Can I just readd the wheel listener instead?
+
+GitHub Copilot: Yes, you can replace the HammerJS code with a `wheel` event listener to handle scrolling. Here's an example of how you can modify your code to use a `wheel` event listener:
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, size;
+    const numColors = 5;
+    const colors = [
+        '#f44336',
+        '#2196f3',
+        '#4caf50',
+        '#ffc107',
+        '#9c27b0'
+    ];
+    let interval = 100;
+    let lastTime = 0;
+
+    function updateColors(time) {
+        if (time - lastTime > 1000) {
+            colors.unshift(colors.pop());
+            lastTime = time;
+        }
+    }
+
+    function renderDebugOverlay() {
+        if (debugOverlayEnabled) {
+            debugOverlay.textContent = `Interval: ${interval}ms`;
+        }
+    }
+
+    let interval = 100;
+    renderDebugOverlay();
+    function adjustInterval(deltaY) {
+        deltaY = Math.floor(deltaY / 50);
+
+        interval -= deltaY;
+        interval = Math.max(interval, 10);
+        interval = Math.min(interval, 1000);
+
+        renderDebugOverlay();
+    }
+
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(() => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            size = Math.min(width, height) / 10;
+        });
+    });
+
+    function draw(time) {
+        updateColors(time)
+
+        for (let x = 0; x < width; x += size) {
+            for (let y = 0; y < height; y += size) {
+                const color = colors[Math.floor(Math.random() * numColors)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        setTimeout(() => {
+            requestAnimationFrame(draw);
+        }, interval);
+    }
+
+    draw();
+
+    canvas.addEventListener('wheel', (event) => {
+        adjustInterval(event.deltaY);
+        event.preventDefault();
+    });
+});
+```
+
+With this code, the HammerJS code is replaced with a `wheel` event listener on the `canvas` element. When the `wheel` event is triggered, the `adjustInterval()` function is called with the `deltaY` value of the event. The `adjustInterval()` function adjusts the `interval` value based on the `deltaY` value and updates the debug overlay.
+
+The `event.preventDefault()` method is called to prevent the default scrolling behavior of the browser.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: I am sorry, I meant: can I use HammerJS and the wheel handler add the same time?
+
+GitHub Copilot: Yes, you can use both HammerJS and the `wheel` event listener at the same time. Here's an example of how you can modify your code to use both:
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, size;
+    const numColors = 5;
+    const colors = [
+        '#f44336',
+        '#2196f3',
+        '#4caf50',
+        '#ffc107',
+        '#9c27b0'
+    ];
+    let interval = 100;
+    let lastTime = 0;
+
+    function updateColors(time) {
+        if (time - lastTime > 1000) {
+            colors.unshift(colors.pop());
+            lastTime = time;
+        }
+    }
+
+    function renderDebugOverlay() {
+        if (debugOverlayEnabled) {
+            debugOverlay.textContent = `Interval: ${interval}ms`;
+        }
+    }
+
+    let interval = 100;
+    renderDebugOverlay();
+    function adjustInterval(deltaY) {
+        deltaY = Math.floor(deltaY / 50);
+
+        interval -= deltaY;
+        interval = Math.max(interval, 10);
+        interval = Math.min(interval, 1000);
+
+        renderDebugOverlay();
+    }
+
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(() => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            size = Math.min(width, height) / 10;
+        });
+    });
+
+    function draw(time) {
+        updateColors(time)
+
+        for (let x = 0; x < width; x += size) {
+            for (let y = 0; y < height; y += size) {
+                const color = colors[Math.floor(Math.random() * numColors)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        setTimeout(() => {
+            requestAnimationFrame(draw);
+        }, interval);
+    }
+
+    draw();
+
+    const mc = new Hammer(canvas);
+    mc.get('pan').set({ direction: Hammer.DIRECTION_VERTICAL });
+    mc.on('pan', (event) => {
+        adjustInterval(event.deltaY);
+    });
+
+    canvas.addEventListener('wheel', (event) => {
+        adjustInterval(event.deltaY);
+        event.preventDefault();
+    });
+});
+```
+
+With this code, both HammerJS and the `wheel` event listener are used to handle scrolling. When the user is using a touch device, HammerJS is used to handle scrolling. When the user is using a desktop browser, the `wheel` event listener is used to handle scrolling.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: Scrolling in a browser needs to be a bit faster, can I multiply the deltaY of that specific event?
+
+GitHub Copilot: Yes, you can multiply the `deltaY` value of the `wheel` event to make the scrolling faster. Here's an example of how you can modify the `adjustInterval()` function to multiply the `deltaY` value:
+
+```javascript
+function adjustInterval(deltaY) {
+    deltaY = Math.floor(deltaY / 50);
+
+    // Multiply deltaY by a factor of 2 to make scrolling faster
+    deltaY *= 2;
+
+    interval -= deltaY;
+    interval = Math.max(interval, 10);
+    interval = Math.min(interval, 1000);
+
+    renderDebugOverlay();
+}
+```
+
+With this modification, the `deltaY` value is multiplied by a factor of 2 before it is used to adjust the `interval` value. This will make the scrolling faster.
+
+Please let me know if this solution works for you or if you have any further questions.
+
+ekroon: I changed the selected line instead, explain it to me
+
+GitHub Copilot: Sure! The line you changed is `adjustInterval(event.deltaY * 20);`. This line is called whenever the `wheel` event is triggered on the `canvas` element. 
+
+The `event.deltaY` property represents the amount of scrolling that has occurred. By multiplying `event.deltaY` by 20, you are increasing the amount of scrolling that occurs each time the `wheel` event is triggered. This will make the scrolling faster.
+
+For example, if `event.deltaY` is 1, then `event.deltaY * 20` will be 20. This means that the `interval` value will be adjusted by 20, making the scrolling faster.
+
+I hope this explanation helps! Let me know if you have any further questions.

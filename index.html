@@ -11,9 +11,20 @@
             display: block;
             margin: 0 auto;
         }
+        #debug-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 4rem;
+        }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
     <script src="script.js"></script>
 </head>
 <body>
+    <canvas id="my-canvas"></canvas>
+    <div id="debug-overlay"></div>
 </body>
 </html>

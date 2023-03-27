@@ -1,8 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.createElement('canvas');
-    document.body.appendChild(canvas);
-
+    const canvas = document.getElementById('my-canvas');
     const ctx = canvas.getContext('2d');
+
+    const debugOverlay = document.getElementById('debug-overlay');
+    const debugOverlayEnabled = debugOverlay !== null;
 
     let saturation = 40;
     let lightness = 60;
@@ -33,30 +34,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    let interval = 100;
-    function adjustInterval(event) {
-        event.preventDefault();
-
-        if (event.deltaY < 0 || event.touches && event.touches[0].clientY < startY) {
-            interval -= 10;
-        } else {
-            interval += 10;
+    function renderDebugOverlay() {
+        if (debugOverlayEnabled) {
+            debugOverlay.textContent = `Interval: ${interval}ms`;
         }
-
-        interval = Math.max(interval, 10);
-        interval = Math.min(interval, 1000);
     }
 
-    document.addEventListener('wheel', adjustInterval);
+    let interval = 100;
+    renderDebugOverlay();
+    function adjustInterval(deltaY) {
+        deltaY = Math.floor(deltaY / 50);
 
-    let startY;
-    document.addEventListener('touchstart', (event) => {
-        startY = event.touches[0].clientY;
-    });
+        interval -= deltaY;
+        interval = Math.max(interval, 10);
+        interval = Math.min(interval, 1000);
 
-    document.addEventListener('touchmove', (event) => {
-        adjustInterval(event.touches[0]);
-    });
+        renderDebugOverlay();
+    }
 
     window.addEventListener('resize', () => {
         requestAnimationFrame(() => {
@@ -83,4 +77,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     draw();
+
+    const mc = new Hammer(canvas);
+    mc.get('pan').set({ direction: Hammer.DIRECTION_VERTICAL });
+    mc.on('pan', (event) => {
+        adjustInterval(event.deltaY);
+    });
+
+    canvas.addEventListener('wheel', (event) => {
+        adjustInterval(event.deltaY * 20);
+        event.preventDefault();
+    });
 });
